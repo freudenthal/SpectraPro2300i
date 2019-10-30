@@ -20,7 +20,7 @@ const SpectraPro2300i::CommandStringList SpectraPro2300i::CommandLibrary[] =
 {
 	{CommandsType::GoWave,CommandValueType::Float,"GOTO",4,false},
 	{CommandsType::Grat,CommandValueType::Integer,"GRATING",7,false},
-	{CommandsType::Wave,CommandValueType::Float,"NM",4,true} //Need to poll wavelength for this must be false, or endless loop occurs.
+	{CommandsType::Wave,CommandValueType::Float,"NM",2,true} //Need to poll wavelength for this must be false, or endless loop occurs.
 };
 SpectraPro2300i::SpectraPro2300i(HardwareSerial *serial)
 {
@@ -270,22 +270,18 @@ void SpectraPro2300i::CheckSerial()
 			{
 				case RecievingPart::Echo:
 					//Serial.print("e");
-					//Serial.print(Character);
 					ParseEcho(Character);
 					break;
 				case RecievingPart::Value:
 					//Serial.print("v");
-					//Serial.print(Character);
 					ParseValue(Character);
 					break;
 				case RecievingPart::Unit:
-					//Serial.print("u");
-					//Serial.print(Character);
+				  //Serial.print("u");
 					ParseUnit(Character);
 					break;
 				case RecievingPart::Status:
 					//Serial.print("s");
-					//Serial.print(Character);
 					ParseStatus(Character);
 					break;
 				default:
@@ -294,7 +290,7 @@ void SpectraPro2300i::CheckSerial()
 		}
 		else if ( ( (CurrentRecievingPart != RecievingPart::Status) && (TimeDifference > TimeOut) ) || ((TimeDifference > 10*TimeOut)) )
 		{
-			Serial.println("Timeout on monochromator.");
+			Serial.print("<MONO>(Timeout on monochromator.)\n");
 			CurrentReply.Command = CommandsType::Error;
 			CurrentReply.Type = TransmissionType::Error;
 			CurrentReply.ValueType = ReplyValueType::Error;
@@ -440,7 +436,7 @@ void SpectraPro2300i::ParseUnit(char Character)
 				CurrentReply.ValueType = ReplyValueType::Error;
 			}
 			ReplyBufferIndex = 0;
-			CurrentRecievingPart = RecievingPart::Echo;
+			CurrentRecievingPart = RecievingPart::Status;
 		}
 	}
 	else
@@ -502,7 +498,7 @@ void SpectraPro2300i::CheckReply()
 	//Serial.print("!C:");
 	if (CurrentReply.Command == CommandsType::Error)
 	{
-		//Serial.println("E!");
+		//Serial.print("E!");
 		if (CommandRetries < MaxCommandRetries)
 		{
 			CommandRetries++;
@@ -511,7 +507,7 @@ void SpectraPro2300i::CheckReply()
 		else
 		{
 			CommandRetries = 0;
-			Serial.println("Monochromator transmission failed.");
+			Serial.print("<MONO>(Monochromator transmission failed.)\n");
 		}
 	}
 	else
@@ -519,6 +515,9 @@ void SpectraPro2300i::CheckReply()
 		if ( (CurrentReply.Command == CommandsType::Wave) || (CurrentReply.Command == CommandsType::GoWave) )
 		{
 			CurrentWavelength = CurrentReply.Value.FloatValue;
+			//Serial.print("WAVE: ");
+			//Serial.print(CurrentWavelength);
+			//Serial.print("\n");
 		}
 		Busy = false;
 		CommandRetries = 0;
